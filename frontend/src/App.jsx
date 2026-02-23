@@ -10,6 +10,7 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
   const [upvotedIds, setUpvotedIds] = useState(() => new Set())
+  const [sortBy, setSortBy] = useState('chronological')
 
   useEffect(() => {
     const stored = window.localStorage.getItem('ideaWallUpvoted')
@@ -134,6 +135,19 @@ export default function App() {
     })
   }
 
+  const sortedIdeas = [...ideas].sort((a, b) => {
+    if (sortBy === 'upvotes') {
+      const aVotes = a.upvotes || 0
+      const bVotes = b.upvotes || 0
+      if (bVotes !== aVotes) return bVotes - aVotes
+      // Tie-breaker: newest first
+      return new Date(b.created_at) - new Date(a.created_at)
+    }
+
+    // Default: chronological (newest first)
+    return new Date(b.created_at) - new Date(a.created_at)
+  })
+
   return (
     <div className="min-h-screen bg-slate-100 py-12 px-4">
       <div className="mx-auto max-w-2xl">
@@ -177,17 +191,47 @@ export default function App() {
             No ideas yet. Be the first to share!
           </p>
         ) : (
-          <ul className="flex flex-col gap-4">
-            {ideas.map((idea) => (
-              <li key={idea.id}>
-                <IdeaCard
-                  idea={idea}
-                  hasUpvoted={upvotedIds.has(idea.id)}
-                  onUpvote={() => handleUpvote(idea.id)}
-                />
-              </li>
-            ))}
-          </ul>
+          <>
+            <div className="mb-4 flex items-center justify-between text-xs text-slate-600">
+              <span className="font-medium text-slate-500">Sort by</span>
+              <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSortBy('chronological')}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    sortBy === 'chronological'
+                      ? 'bg-slate-800 text-white shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  Chronological
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSortBy('upvotes')}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    sortBy === 'upvotes'
+                      ? 'bg-slate-800 text-white shadow-sm'
+                      : 'text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  Most upvotes
+                </button>
+              </div>
+            </div>
+
+            <ul className="flex flex-col gap-4">
+              {sortedIdeas.map((idea) => (
+                <li key={idea.id}>
+                  <IdeaCard
+                    idea={idea}
+                    hasUpvoted={upvotedIds.has(idea.id)}
+                    onUpvote={() => handleUpvote(idea.id)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </div>
