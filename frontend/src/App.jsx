@@ -62,8 +62,47 @@ export default function App() {
   }
 
   const handleUpvote = (id) => {
-    if (upvotedIds.has(id)) return
+    const alreadyUpvoted = upvotedIds.has(id)
 
+    if (alreadyUpvoted) {
+      // Optimistic remove
+      setUpvotedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        window.localStorage.setItem('ideaWallUpvoted', JSON.stringify([...next]))
+        return next
+      })
+
+      setIdeas((prev) =>
+        prev.map((idea) =>
+          idea.id === id
+            ? { ...idea, upvotes: Math.max((idea.upvotes || 0) - 1, 0) }
+            : idea
+        )
+      )
+
+      fetch(`${API_URL}/ideas/${id}/remove-upvote`, {
+        method: 'POST',
+      }).catch((err) => {
+        console.error('Failed to remove upvote', err)
+        // Revert optimistic change
+        setIdeas((prev) =>
+          prev.map((idea) =>
+            idea.id === id ? { ...idea, upvotes: (idea.upvotes || 0) + 1 } : idea
+          )
+        )
+        setUpvotedIds((prev) => {
+          const next = new Set(prev)
+          next.add(id)
+          window.localStorage.setItem('ideaWallUpvoted', JSON.stringify([...next]))
+          return next
+        })
+      })
+
+      return
+    }
+
+    // Optimistic add
     setUpvotedIds((prev) => {
       const next = new Set(prev)
       next.add(id)
@@ -83,7 +122,7 @@ export default function App() {
       console.error('Failed to upvote', err)
       setIdeas((prev) =>
         prev.map((idea) =>
-          idea.id === id ? { ...idea, upvotes: (idea.upvotes || 1) - 1 } : idea
+          idea.id === id ? { ...idea, upvotes: Math.max((idea.upvotes || 1) - 1, 0) } : idea
         )
       )
       setUpvotedIds((prev) => {

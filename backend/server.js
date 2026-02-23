@@ -69,6 +69,25 @@ app.post('/ideas/:id/upvote', async (req, res) => {
   }
 });
 
+app.post('/ideas/:id/remove-upvote', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      'UPDATE ideas SET upvotes = GREATEST(upvotes - 1, 0) WHERE id = $1 RETURNING id, content, created_at, upvotes',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Idea not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error removing upvote:', err);
+    res.status(500).json({ error: 'Failed to remove upvote' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Anonymous Idea Wall API running on http://localhost:${PORT}`);
 });

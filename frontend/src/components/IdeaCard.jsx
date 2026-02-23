@@ -14,7 +14,6 @@ export default function IdeaCard({ idea, hasUpvoted, onUpvote }) {
         <button
           type="button"
           onClick={onUpvote}
-          disabled={hasUpvoted}
           aria-pressed={hasUpvoted}
           className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
