@@ -25,17 +25,34 @@ export default function App() {
       }
     }
 
-    fetch(`${API_URL}/ideas`)
-      .then((res) => res.json())
-      .then((data) => {
-        setIdeas(data)
-        setError(null)
-      })
-      .catch((err) => {
-        setError('Failed to load ideas')
-        console.error(err)
-      })
-      .finally(() => setLoading(false))
+    const fetchIdeas = (isInitial = false) => {
+      if (isInitial) {
+        setLoading(true)
+      }
+
+      fetch(`${API_URL}/ideas`)
+        .then((res) => res.json())
+        .then((data) => {
+          setIdeas(data)
+          setError(null)
+        })
+        .catch((err) => {
+          setError('Failed to load ideas')
+          console.error(err)
+        })
+        .finally(() => {
+          if (isInitial) {
+            setLoading(false)
+          }
+        })
+    }
+
+    fetchIdeas(true)
+    const intervalId = setInterval(() => fetchIdeas(false), 5000)
+
+    return () => {
+      clearInterval(intervalId)
+    }
   }, [])
 
   const handleSubmit = (e) => {
