@@ -9,8 +9,21 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState(null)
+  const [upvotedIds, setUpvotedIds] = useState(() => new Set())
 
   useEffect(() => {
+    const stored = window.localStorage.getItem('ideaWallUpvoted')
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored)
+        if (Array.isArray(parsed)) {
+          setUpvotedIds(new Set(parsed))
+        }
+      } catch (e) {
+        console.error('Failed to parse stored upvotes', e)
+      }
+    }
+
     fetch(`${API_URL}/ideas`)
       .then((res) => res.json())
       .then((data) => {
@@ -46,6 +59,40 @@ export default function App() {
         console.error(err)
       })
       .finally(() => setSubmitting(false))
+  }
+
+  const handleUpvote = (id) => {
+    if (upvotedIds.has(id)) return
+
+    setUpvotedIds((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      window.localStorage.setItem('ideaWallUpvoted', JSON.stringify([...next]))
+      return next
+    })
+
+    setIdeas((prev) =>
+      prev.map((idea) =>
+        idea.id === id ? { ...idea, upvotes: (idea.upvotes || 0) + 1 } : idea
+      )
+    )
+
+    fetch(`${API_URL}/ideas/${id}/upvote`, {
+      method: 'POST',
+    }).catch((err) => {
+      console.error('Failed to upvote', err)
+      setIdeas((prev) =>
+        prev.map((idea) =>
+          idea.id === id ? { ...idea, upvotes: (idea.upvotes || 1) - 1 } : idea
+        )
+      )
+      setUpvotedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(id)
+        window.localStorage.setItem('ideaWallUpvoted', JSON.stringify([...next]))
+        return next
+      })
+    })
   }
 
   return (
@@ -94,7 +141,11 @@ export default function App() {
           <ul className="flex flex-col gap-4">
             {ideas.map((idea) => (
               <li key={idea.id}>
-                <IdeaCard idea={idea} />
+                <IdeaCard
+                  idea={idea}
+                  hasUpvoted={upvotedIds.has(idea.id)}
+                  onUpvote={() => handleUpvote(idea.id)}
+                />
               </li>
             ))}
           </ul>
