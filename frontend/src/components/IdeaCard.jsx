@@ -1,5 +1,5 @@
 export default function IdeaCard({ idea }) {
-  const date = new Date(idea.created_at).toLocaleDateString(undefined, {
+  const date = new Date(idea.created_at).toLocaleString(undefined, {
     dateStyle: 'medium',
     timeStyle: 'short',
   })
